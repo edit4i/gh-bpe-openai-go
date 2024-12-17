@@ -1,0 +1,45 @@
+name: Publish to pkg.go.dev
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Download Release Assets
+        run: |
+          # Get the latest release tag
+          TAG=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r .tag_name)
+          
+          # Create lib directories
+          mkdir -p lib/{linux,darwin,windows}_{amd64,arm64}
+          
+          # Download the assets
+          cd lib
+          for os in linux darwin windows; do
+            for arch in amd64 arm64; do
+              if [ "$os" = "windows" ] && [ "$arch" = "arm64" ]; then
+                continue
+              fi
+              asset_url=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | \
+                jq -r ".assets[] | select(.name | contains(\"${os}\") and contains(\"${arch}\")) | .browser_download_url")
+              if [ ! -z "$asset_url" ]; then
+                curl -L -o ${os}_${arch}/$(basename $asset_url) $asset_url
+              fi
+            done
+          done
+
+      - name: Verify Module
+        run: |
+          GOPROXY=proxy.golang.org go list -m github.com/${{ github.repository }}@${{ github.ref_name }}

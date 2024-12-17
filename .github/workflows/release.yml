@@ -1,0 +1,103 @@
+name: Build Libraries
+
+on:
+  push:
+    branches:
+      - release
+  pull_request:
+    branches:
+      - release
+
+jobs:
+  build-libraries:
+    name: Build Platform Libraries
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: linux
+            arch: amd64
+            lib_name: libbpe_openai_ffi.so
+          - target: aarch64-unknown-linux-gnu
+            os: linux
+            arch: arm64
+            lib_name: libbpe_openai_ffi.so
+          - target: x86_64-apple-darwin
+            os: darwin
+            arch: amd64
+            lib_name: libbpe_openai_ffi.dylib
+          - target: aarch64-apple-darwin
+            os: darwin
+            arch: arm64
+            lib_name: libbpe_openai_ffi.dylib
+          - target: x86_64-pc-windows-gnu
+            os: windows
+            arch: amd64
+            lib_name: bpe_openai_ffi.dll
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+
+      - name: Install Cross-compilation Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu gcc-mingw-w64
+          rustup target add ${{ matrix.target }}
+
+      - name: Build Library
+        run: |
+          make create-dirs
+          make build-${{ matrix.os }}-${{ matrix.arch }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.os }}_${{ matrix.arch }}
+          path: lib/${{ matrix.os }}_${{ matrix.arch }}/${{ matrix.lib_name }}
+
+  commit-libraries:
+    needs: build-libraries
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/release'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: release
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Move Libraries to Correct Locations
+        run: |
+          for os_arch in artifacts/*; do
+            if [ -d "$os_arch" ]; then
+              dir_name=$(basename "$os_arch")
+              mkdir -p "lib/$dir_name"
+              cp "$os_arch"/* "lib/$dir_name/"
+            fi
+          done
+
+      - name: Commit and Push Libraries
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add lib/
+          git commit -m "Update platform libraries [skip ci]" || echo "No changes to commit"
+          git push origin release

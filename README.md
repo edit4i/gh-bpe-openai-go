@@ -19,20 +19,18 @@ Key findings:
 
 ## Installation
 
-### Using Pre-compiled Binaries (Recommended)
-
-The package includes pre-compiled binaries for common platforms:
-- Linux (x86_64, aarch64)
+The package includes pre-compiled libraries for:
+- Linux (x86_64, arm64)
 - macOS (x86_64, arm64)
 - Windows (x86_64)
 
-Simply install using go get:
+### Using `go get`
 
 ```bash
 go get github.com/edit4i/gh-bpe-openai-go
 ```
 
-The appropriate binary will be automatically used for your platform.
+The appropriate library for your platform is included in the package and will be automatically used during compilation.
 
 ### Building from Source
 
