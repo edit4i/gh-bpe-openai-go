@@ -1,5 +1,4 @@
 use std::ffi::{c_char, CStr, CString};
-use std::marker::PhantomData;
 use std::ptr;
 use std::slice;
 
@@ -9,26 +8,23 @@ use bpe_openai::{cl100k_base, o200k_base, Tokenizer};
 #[repr(C)]
 #[derive(Debug)]
 pub struct TokenizerHandle {
-    _private: [u8; 0],
-    _marker: PhantomData<*const ()>,
-}
-
-struct TokenizerState {
     tokenizer: *const Tokenizer,
 }
 
 impl TokenizerHandle {
-    fn new(tokenizer: *const Tokenizer) -> *mut Self {
-        let state = Box::new(TokenizerState { tokenizer });
-        Box::into_raw(Box::new(state)) as *mut TokenizerHandle
+    fn new(tokenizer: &'static Tokenizer) -> *mut Self {
+        let handle = Box::new(TokenizerHandle {
+            tokenizer: tokenizer as *const Tokenizer,
+        });
+        Box::into_raw(handle)
     }
 
     unsafe fn get_tokenizer(handle: *const TokenizerHandle) -> Option<&'static Tokenizer> {
         if handle.is_null() {
             return None;
         }
-        let state = &*(handle as *const TokenizerState);
-        Some(&*state.tokenizer)
+        let handle = &*handle;
+        Some(&*handle.tokenizer)
     }
 }
 
@@ -117,10 +113,6 @@ pub extern "C" fn bpe_encode(
         }
     }
 
-    if tokens.is_empty() {
-        return ptr::null_mut();
-    }
-
     let mut tokens_vec = tokens.into_boxed_slice();
     let ptr = tokens_vec.as_mut_ptr();
     // Leak the box intentionally - it will be freed by Go
@@ -159,7 +151,8 @@ pub extern "C" fn bpe_decode(
 pub extern "C" fn bpe_free(handle: *mut TokenizerHandle) {
     if !handle.is_null() {
         unsafe {
-            drop(Box::from_raw(handle as *mut TokenizerState));
+            let _handle = Box::from_raw(handle);
+            // Don't drop the tokenizer since it's a static reference
         }
     }
 }

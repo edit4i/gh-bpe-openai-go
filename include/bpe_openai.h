@@ -12,7 +12,7 @@
  * Opaque handle to a BPE tokenizer
  */
 typedef struct bpe_TokenizerHandle {
-  uint8_t _private[0];
+  const struct bpe_Tokenizer *tokenizer;
 } bpe_TokenizerHandle;
 
 #ifdef __cplusplus

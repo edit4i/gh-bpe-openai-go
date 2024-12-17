@@ -4,9 +4,14 @@ include_guard = "BPE_OPENAI_H"
 style = "both"
 cpp_compat = true
 
+[parse]
+parse_deps = true
+include = ["bpe-openai"]
+
 [export]
 prefix = "bpe_"
 item_types = ["functions", "structs"]
+include = ["TokenizerHandle"]
 
 [defines]
 "target_os = windows" = "WINDOWS"

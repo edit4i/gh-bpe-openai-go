@@ -12,7 +12,7 @@ import (
 
 // Tokenizer represents a BPE tokenizer instance
 type Tokenizer struct {
-	ptr *C.TokenizerHandle
+	ptr *C.struct_bpe_TokenizerHandle
 }
 
 // Error definitions
@@ -28,7 +28,7 @@ func NewCL100kTokenizer() (*Tokenizer, error) {
 	if ptr == nil {
 		return nil, ErrInvalidTokenizer
 	}
-	t := &Tokenizer{ptr: ptr}
+	t := &Tokenizer{ptr: (*C.struct_bpe_TokenizerHandle)(ptr)}
 	runtime.SetFinalizer(t, (*Tokenizer).free)
 	return t, nil
 }
@@ -39,7 +39,7 @@ func NewO200kTokenizer() (*Tokenizer, error) {
 	if ptr == nil {
 		return nil, ErrInvalidTokenizer
 	}
-	t := &Tokenizer{ptr: ptr}
+	t := &Tokenizer{ptr: (*C.struct_bpe_TokenizerHandle)(ptr)}
 	runtime.SetFinalizer(t, (*Tokenizer).free)
 	return t, nil
 }
@@ -63,7 +63,7 @@ func (t *Tokenizer) CountTillLimit(text string, limit int) (int, error) {
 	cText := C.CString(text)
 	defer C.free(unsafe.Pointer(cText))
 	count := C.bpe_count_till_limit(t.ptr, cText, C.size_t(limit))
-	if count == C.size_t(-1) {
+	if count == ^C.size_t(0) {  
 		return -1, nil
 	}
 	return int(count), nil
@@ -79,16 +79,25 @@ func (t *Tokenizer) Encode(text string) ([]uint32, error) {
 
 	var tokenCount C.size_t
 	tokensPtr := C.bpe_encode(t.ptr, cText, &tokenCount)
-	if tokensPtr == nil {
+	if tokensPtr == nil && tokenCount > 0 {
 		return nil, ErrEncoding
 	}
-	defer C.free(unsafe.Pointer(tokensPtr))
 
-	tokens := make([]uint32, int(tokenCount))
-	src := unsafe.Slice((*uint32)(unsafe.Pointer(tokensPtr)), int(tokenCount))
-	copy(tokens, src)
+	if tokenCount == 0 {
+		return []uint32{}, nil
+	}
 
-	return tokens, nil
+	// Create a slice from the C array without copying
+	tokens := unsafe.Slice((*uint32)(unsafe.Pointer(tokensPtr)), int(tokenCount))
+	
+	// Create a new Go slice and copy the data
+	result := make([]uint32, int(tokenCount))
+	copy(result, tokens)
+
+	// Free the original C array
+	C.free(unsafe.Pointer(tokensPtr))
+
+	return result, nil
 }
 
 // Decode converts a sequence of token IDs back into text

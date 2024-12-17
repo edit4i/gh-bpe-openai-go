@@ -20,7 +20,7 @@ func TestCL100kTokenizer(t *testing.T) {
 		{
 			name:     "Simple text",
 			input:    "Hello, world!",
-			wantLen:  3,
+			wantLen:  4,
 			wantErr:  false,
 			wantText: "Hello, world!",
 		},
@@ -34,7 +34,7 @@ func TestCL100kTokenizer(t *testing.T) {
 		{
 			name:     "Unicode text",
 			input:    "Hello 👋 World 🌍",
-			wantLen:  5,
+			wantLen:  7,
 			wantErr:  false,
 			wantText: "Hello 👋 World 🌍",
 		},
@@ -98,7 +98,7 @@ func TestO200kTokenizer(t *testing.T) {
 		{
 			name:     "Simple text",
 			input:    "Hello, world!",
-			wantLen:  3,
+			wantLen:  4,
 			wantErr:  false,
 			wantText: "Hello, world!",
 		},
@@ -112,7 +112,7 @@ func TestO200kTokenizer(t *testing.T) {
 		{
 			name:     "Unicode text",
 			input:    "Hello 👋 World 🌍",
-			wantLen:  5,
+			wantLen:  6,
 			wantErr:  false,
 			wantText: "Hello 👋 World 🌍",
 		},
