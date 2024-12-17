@@ -30,6 +30,8 @@ The package includes pre-compiled libraries for:
 go get github.com/edit4i/gh-bpe-openai-go
 ```
 
+> For now, the github action is not working properly, so you'll need to build from source. But will update this ASAP
+
 The appropriate library for your platform is included in the package and will be automatically used during compilation.
 
 ### Building from Source
@@ -78,7 +80,6 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-    defer tokenizer.Free()
 
     text := "Hello, world!"
     tokens, err := tokenizer.Encode(text)
