@@ -1,29 +1,52 @@
 use std::ffi::{c_char, CStr, CString};
+use std::marker::PhantomData;
 use std::ptr;
 use std::slice;
 
 use bpe_openai::{cl100k_base, o200k_base, Tokenizer};
 
+/// Opaque handle to a BPE tokenizer
 #[repr(C)]
-pub struct bpe_tokenizer_t(Tokenizer);
-
-#[no_mangle]
-pub extern "C" fn bpe_cl100k_base() -> *mut bpe_tokenizer_t {
-    Box::into_raw(Box::new(bpe_tokenizer_t(cl100k_base().clone())))
+#[derive(Debug)]
+pub struct TokenizerHandle {
+    _private: [u8; 0],
+    _marker: PhantomData<*const ()>,
 }
 
-#[no_mangle]
-pub extern "C" fn bpe_o200k_base() -> *mut bpe_tokenizer_t {
-    Box::into_raw(Box::new(bpe_tokenizer_t(o200k_base().clone())))
+struct TokenizerState {
+    tokenizer: *const Tokenizer,
 }
 
-#[no_mangle]
-pub extern "C" fn bpe_count(tokenizer: *const bpe_tokenizer_t, text: *const c_char) -> usize {
-    let tokenizer = unsafe {
-        if tokenizer.is_null() {
-            return 0;
+impl TokenizerHandle {
+    fn new(tokenizer: *const Tokenizer) -> *mut Self {
+        let state = Box::new(TokenizerState { tokenizer });
+        Box::into_raw(Box::new(state)) as *mut TokenizerHandle
+    }
+
+    unsafe fn get_tokenizer(handle: *const TokenizerHandle) -> Option<&'static Tokenizer> {
+        if handle.is_null() {
+            return None;
         }
-        &(*tokenizer).0
+        let state = &*(handle as *const TokenizerState);
+        Some(&*state.tokenizer)
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn bpe_cl100k_base() -> *mut TokenizerHandle {
+    TokenizerHandle::new(cl100k_base())
+}
+
+#[no_mangle]
+pub extern "C" fn bpe_o200k_base() -> *mut TokenizerHandle {
+    TokenizerHandle::new(o200k_base())
+}
+
+#[no_mangle]
+pub extern "C" fn bpe_count(handle: *const TokenizerHandle, text: *const c_char) -> usize {
+    let tokenizer = match unsafe { TokenizerHandle::get_tokenizer(handle) } {
+        Some(t) => t,
+        None => return 0,
     };
 
     let text = unsafe {
@@ -41,15 +64,13 @@ pub extern "C" fn bpe_count(tokenizer: *const bpe_tokenizer_t, text: *const c_ch
 
 #[no_mangle]
 pub extern "C" fn bpe_count_till_limit(
-    tokenizer: *const bpe_tokenizer_t,
+    handle: *const TokenizerHandle,
     text: *const c_char,
     limit: usize,
 ) -> usize {
-    let tokenizer = unsafe {
-        if tokenizer.is_null() {
-            return usize::MAX;
-        }
-        &(*tokenizer).0
+    let tokenizer = match unsafe { TokenizerHandle::get_tokenizer(handle) } {
+        Some(t) => t,
+        None => return usize::MAX,
     };
 
     let text = unsafe {
@@ -70,15 +91,13 @@ pub extern "C" fn bpe_count_till_limit(
 
 #[no_mangle]
 pub extern "C" fn bpe_encode(
-    tokenizer: *const bpe_tokenizer_t,
+    handle: *const TokenizerHandle,
     text: *const c_char,
     token_count: *mut usize,
 ) -> *mut u32 {
-    let tokenizer = unsafe {
-        if tokenizer.is_null() {
-            return ptr::null_mut();
-        }
-        &(*tokenizer).0
+    let tokenizer = match unsafe { TokenizerHandle::get_tokenizer(handle) } {
+        Some(t) => t,
+        None => return ptr::null_mut(),
     };
 
     let text = unsafe {
@@ -104,21 +123,20 @@ pub extern "C" fn bpe_encode(
 
     let mut tokens_vec = tokens.into_boxed_slice();
     let ptr = tokens_vec.as_mut_ptr();
-    Box::into_raw(tokens_vec);
+    // Leak the box intentionally - it will be freed by Go
+    let _ = Box::into_raw(tokens_vec);
     ptr
 }
 
 #[no_mangle]
 pub extern "C" fn bpe_decode(
-    tokenizer: *const bpe_tokenizer_t,
+    handle: *const TokenizerHandle,
     tokens: *const u32,
     token_count: usize,
 ) -> *mut c_char {
-    let tokenizer = unsafe {
-        if tokenizer.is_null() {
-            return ptr::null_mut();
-        }
-        &(*tokenizer).0
+    let tokenizer = match unsafe { TokenizerHandle::get_tokenizer(handle) } {
+        Some(t) => t,
+        None => return ptr::null_mut(),
     };
 
     let tokens = unsafe {
@@ -138,10 +156,10 @@ pub extern "C" fn bpe_decode(
 }
 
 #[no_mangle]
-pub extern "C" fn bpe_free(tokenizer: *mut bpe_tokenizer_t) {
-    if !tokenizer.is_null() {
+pub extern "C" fn bpe_free(handle: *mut TokenizerHandle) {
+    if !handle.is_null() {
         unsafe {
-            drop(Box::from_raw(tokenizer));
+            drop(Box::from_raw(handle as *mut TokenizerState));
         }
     }
 }

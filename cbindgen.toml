@@ -6,7 +6,7 @@ cpp_compat = true
 
 [export]
 prefix = "bpe_"
-renaming_overrides = { "new" = "create" }
+item_types = ["functions", "structs"]
 
 [defines]
 "target_os = windows" = "WINDOWS"

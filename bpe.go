@@ -12,7 +12,7 @@ import (
 
 // Tokenizer represents a BPE tokenizer instance
 type Tokenizer struct {
-	ptr *C.bpe_tokenizer_t
+	ptr *C.TokenizerHandle
 }
 
 // Error definitions
