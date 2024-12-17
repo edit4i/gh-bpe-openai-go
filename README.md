@@ -19,8 +19,46 @@ Key findings:
 
 ## Installation
 
+### Using Pre-compiled Binaries (Recommended)
+
+The package includes pre-compiled binaries for common platforms:
+- Linux (x86_64, aarch64)
+- macOS (x86_64, arm64)
+- Windows (x86_64)
+
+Simply install using go get:
+
 ```bash
 go get github.com/edit4i/gh-bpe-openai-go
+```
+
+The appropriate binary will be automatically used for your platform.
+
+### Building from Source
+
+If you need to build for a different platform or want to optimize for your specific architecture:
+
+1. Install Rust toolchain (https://rustup.rs/)
+2. Clone the repository with submodules:
+```bash
+git clone --recursive https://github.com/edit4i/gh-bpe-openai-go
+cd gh-bpe-openai-go
+```
+3. Build the Rust library:
+```bash
+cd rust
+cargo build --release
+```
+4. Copy the built library to the appropriate location:
+```bash
+# Linux
+cp target/release/libbpe_openai_ffi.so ../lib/linux_amd64/
+
+# macOS
+cp target/release/libbpe_openai_ffi.dylib ../lib/darwin_amd64/
+
+# Windows
+cp target/release/bpe_openai_ffi.dll ../lib/windows_amd64/
 ```
 
 ## Usage
@@ -123,6 +161,27 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Maintaining Pre-compiled Binaries
+
+When updating the Rust implementation, please rebuild and update the pre-compiled binaries for all supported platforms:
+
+1. Build for each platform using appropriate cross-compilation tools
+2. Place the compiled libraries in the correct `lib/` subdirectories:
+   - Linux: `lib/linux_amd64/libbpe_openai_ffi.so`, `lib/linux_arm64/libbpe_openai_ffi.so`
+   - macOS: `lib/darwin_amd64/libbpe_openai_ffi.dylib`, `lib/darwin_arm64/libbpe_openai_ffi.dylib`
+   - Windows: `lib/windows_amd64/bpe_openai_ffi.dll`
+3. Test the package on each platform to ensure the binaries work correctly
+4. Update the version number in both Rust and Go code
+
+### Cross-compilation Tips
+
+For cross-compilation, you can use:
+- Docker for Linux targets
+- OSX Cross for macOS targets
+- MinGW-w64 for Windows targets
+
+Example cross-compilation commands will be provided in the `scripts/` directory.
 
 ## Acknowledgments
 

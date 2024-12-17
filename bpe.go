@@ -23,9 +23,15 @@
 //	fmt.Printf("Text: %s\n", text)
 package bpe
 
-// #cgo LDFLAGS: -L${SRCDIR}/build -lbpe_openai_ffi
-// #cgo CFLAGS: -I${SRCDIR}/include
-// #include <bpe_openai.h>
+/*
+#cgo linux,amd64 LDFLAGS: -L${SRCDIR}/lib/linux_amd64 -lbpe_openai_ffi
+#cgo linux,arm64 LDFLAGS: -L${SRCDIR}/lib/linux_arm64 -lbpe_openai_ffi
+#cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/lib/darwin_amd64 -lbpe_openai_ffi
+#cgo darwin,arm64 LDFLAGS: -L${SRCDIR}/lib/darwin_arm64 -lbpe_openai_ffi
+#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/lib/windows_amd64 -lbpe_openai_ffi
+#cgo CFLAGS: -I${SRCDIR}/include
+#include <bpe_openai.h>
+*/
 import "C"
 import (
 	"errors"
