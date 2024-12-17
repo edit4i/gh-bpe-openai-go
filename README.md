@@ -80,7 +80,6 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-    defer tokenizer.Free()
 
     text := "Hello, world!"
     tokens, err := tokenizer.Encode(text)
