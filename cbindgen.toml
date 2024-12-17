@@ -1,0 +1,14 @@
+language = "C"
+header = "/* Auto-generated header for bpe-openai bindings */"
+include_guard = "BPE_OPENAI_H"
+style = "both"
+cpp_compat = true
+
+[export]
+prefix = "bpe_"
+renaming_overrides = { "new" = "create" }
+
+[defines]
+"target_os = windows" = "WINDOWS"
+"target_os = macos" = "MACOS"
+"target_os = linux" = "LINUX"

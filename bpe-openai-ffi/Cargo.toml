@@ -1,0 +1,11 @@
+[package]
+name = "bpe-openai-ffi"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "bpe_openai_ffi"
+crate-type = ["staticlib"]
+
+[dependencies]
+bpe-openai = { path = "../rust-gems/crates/bpe-openai" }
