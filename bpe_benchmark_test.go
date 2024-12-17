@@ -2,6 +2,8 @@ package bpe
 
 import (
 	"testing"
+
+	"github.com/pkoukk/tiktoken-go"
 )
 
 var benchmarkTexts = []struct {
@@ -49,6 +51,38 @@ func BenchmarkO200kTokenizer(b *testing.B) {
 				if err != nil {
 					b.Fatalf("Encode failed: %v", err)
 				}
+			}
+		})
+	}
+}
+
+func BenchmarkTiktokenCL100k(b *testing.B) {
+	enc, err := tiktoken.GetEncoding("cl100k_base")
+	if err != nil {
+		b.Fatalf("Failed to create CL100k tokenizer: %v", err)
+	}
+
+	for _, tc := range benchmarkTexts {
+		b.Run(tc.name, func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				_ = enc.Encode(tc.text, nil, nil)
+			}
+		})
+	}
+}
+
+func BenchmarkTiktokenO200k(b *testing.B) {
+	enc, err := tiktoken.GetEncoding("o200k_base")
+	if err != nil {
+		b.Fatalf("Failed to create O200k tokenizer: %v", err)
+	}
+
+	for _, tc := range benchmarkTexts {
+		b.Run(tc.name, func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				_ = enc.Encode(tc.text, nil, nil)
 			}
 		})
 	}

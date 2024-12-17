@@ -1,2 +1,3 @@
 build
 bpe-openai-ffi/target
+.venv
